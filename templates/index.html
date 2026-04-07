@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}All Books — LibraryHub{% endblock %}
+
+{% block content %}
+
+  <!-- ── Page heading ──────────────────────────────────── -->
+  <div class="page-header">
+    <h1>Library Catalog</h1>
+    <p class="page-subtitle">Manage your library books in one place</p>
+  </div>
+
+  <!-- ── Stats cards ───────────────────────────────────── -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">{{ total }}</div>
+      <div class="stat-label">Total Books</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-number">{{ available }}</div>
+      <div class="stat-label">Available</div>
+    </div>
+    <div class="stat-card stat-orange">
+      <div class="stat-number">{{ borrowed }}</div>
+      <div class="stat-label">Borrowed</div>
+    </div>
+  </div>
+
+  <!-- ── Search and filter bar ─────────────────────────── -->
+  <form method="GET" action="{{ url_for('index') }}" class="search-bar">
+    <input
+      type="text"
+      name="search"
+      value="{{ search }}"
+      placeholder="Search by title, author, or genre..."
+      class="search-input"
+    />
+    <select name="status" class="filter-select">
+      <option value="all"       {% if filter_status == 'all'       %}selected{% endif %}>All Books</option>
+      <option value="available" {% if filter_status == 'available' %}selected{% endif %}>Available Only</option>
+      <option value="borrowed"  {% if filter_status == 'borrowed'  %}selected{% endif %}>Borrowed Only</option>
+    </select>
+    <button type="submit" class="btn btn-search">Search</button>
+    {% if search or filter_status != 'all' %}
+      <a href="{{ url_for('index') }}" class="btn btn-clear">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- ── Book table ─────────────────────────────────────── -->
+  {% if books %}
+    <div class="table-wrapper">
+      <table class="book-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>Status</th>
+            <th>Borrow Date</th>
+            <th>Return Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <tr class="{% if book.status == 'borrowed' %}row-borrowed{% endif %}">
+            <td class="col-id">{{ book.id }}</td>
+            <td class="col-title"><strong>{{ book.title }}</strong></td>
+            <td>{{ book.author }}</td>
+            <td><span class="tag-genre">{{ book.genre }}</span></td>
+            <td>
+              {% if book.status == "available" %}
+                <span class="badge badge-available">Available</span>
+              {% else %}
+                <span class="badge badge-borrowed">Borrowed</span>
+              {% endif %}
+            </td>
+            <td>{{ book.borrow_date or "—" }}</td>
+            <td>{{ book.return_date or "—" }}</td>
+            <td class="col-actions">
+              {% if book.status == "available" %}
+                <!-- Borrow button -->
+                <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-borrow">Borrow</button>
+                </form>
+                <!-- Delete button -->
+                <form method="POST" action="{{ url_for('delete_book', book_id=book.id) }}" style="display:inline;"
+                      onsubmit="return confirm('Remove \'{{ book.title }}\' from the library?')">
+                  <button type="submit" class="btn btn-delete">Remove</button>
+                </form>
+              {% else %}
+                <!-- Return button -->
+                <form method="POST" action="{{ url_for('return_book', book_id=book.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-return">Return</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% else %}
+    <!-- Empty state -->
+    <div class="empty-state">
+      {% if search %}
+        <p class="empty-icon">🔍</p>
+        <h2>No books found for "{{ search }}"</h2>
+        <p>Try a different search term or <a href="{{ url_for('index') }}">view all books</a>.</p>
+      {% else %}
+        <p class="empty-icon">📭</p>
+        <h2>No books in the library yet</h2>
+        <p>Start by <a href="{{ url_for('add_book') }}">adding your first book</a>.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+{% endblock %}
