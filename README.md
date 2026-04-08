@@ -1,54 +1,123 @@
-# LibraryHub — Library Management Web App
+# LibraryHub
 
-A simple, clean web application for managing library books.
-Built with **Python · Flask · SQLite · HTML · CSS**
+A full-stack library management dashboard built with **Vue 3 + TypeScript** (frontend) and **Flask + SQLite** (backend).
 
----
-
-## What This App Does
-
-LibraryHub lets you manage a collection of library books through a web browser.
-
-You can:
-- View all books in a searchable, filterable table
-- Add new books with title, author, and genre
-- Borrow a book (marks it as borrowed with today's date)
-- Return a book (marks it as available again)
-- Remove a book from the library
-- See live counts of total, available, and borrowed books
-
----
-
-## Tools Used
-
-| Tool | What it does |
-|------|--------------|
-| Python | Main programming language |
-| Flask | Web framework — handles pages and requests |
-| Flask-SQLAlchemy | Makes working with the database easy |
-| SQLite | Stores all the book data in a file |
-| Jinja2 (HTML templates) | Generates web pages dynamically |
-| CSS | Styles the app to look clean and professional |
+Manage physical resources (books, magazines, DVDs, etc.), track checkouts and returns with borrower names and due dates, and monitor overdue items — all from a clean, responsive Material Design UI.
 
 ---
 
 ## Features
 
-**Core features**
-- View all books in a table
-- Add a book (title, author, genre)
-- Borrow a book (status changes to Borrowed)
-- Return a book (status changes to Available)
-- Remove a book (only if not currently borrowed)
+| Area | What's included |
+|------|----------------|
+| **Dashboard** | Live stat cards (total / available / checked-out / overdue), category breakdown bars, recent loan activity feed |
+| **Resources** | Server-side search, filter by status/category, sort controls, paginated table, copy-count chip |
+| **Checkout** | Per-resource checkout modal — borrower name + configurable due date (defaults to +14 days) |
+| **Edit** | In-place edit modal for title, author, category, ISBN, description, and copy count |
+| **Detail Drawer** | Right-side slide-over with full resource info + paginated loan history |
+| **Loan History** | Dedicated history view with search, status filter, overdue date highlighting, pagination |
+| **Overdue tracking** | Backend marks loans overdue on startup; frontend badge overrides with `isOverdue` flag |
+| **Multi-copy** | `totalCopies` / `availableCopies` — a resource stays "available" as long as one copy is free |
+| **Toasts** | Global snackbar (Pinia `ui` store) for success/error feedback on every action |
 
-**Extra features**
-- Search books by title, author, or genre
-- Filter by status (Available / Borrowed / All)
-- See borrow date and return date for each book
-- Stats bar shows total, available, and borrowed counts
-- Flash messages for success and error feedback
-- Duplicate book protection (same title + author blocked)
-- Prevents removing a book that is currently borrowed
+---
+
+## Tech Stack
+
+**Frontend**
+- Vue 3 (Composition API, `<script setup lang="ts">`)
+- TypeScript (strict mode)
+- Pinia (state management)
+- Vuetify 3 + Material Design Icons
+- Vue Router 4
+- Axios
+- Vitest + Vue Test Utils + happy-dom (19 tests)
+
+**Backend**
+- Python 3.10+ / Flask 3
+- Flask-SQLAlchemy (SQLite)
+- Flask-CORS
+
+---
+
+## Prerequisites
+
+| Tool | Version |
+|------|---------|
+| Python | 3.10 or newer |
+| Node.js | 18 or newer |
+| npm | 9 or newer |
+
+---
+
+## Quick Start
+
+### 1 — Clone / navigate into the project
+
+```bash
+cd /path/to/Library_web_app
+```
+
+### 2 — Backend
+
+```bash
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Start the API server (http://localhost:5000)
+python backend/app.py
+```
+
+The database (`library.db`) is created automatically on first run.
+
+### 3 — Frontend
+
+Open a **second terminal** in the same directory:
+
+```bash
+cd frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Start the dev server (http://localhost:5173)
+npm run dev
+```
+
+Open **http://localhost:5173** in your browser.
+
+> The Vite dev server proxies all `/api/*` requests to Flask at port 5000, so no CORS setup is needed during development.
+
+---
+
+## Available Scripts (frontend)
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server with hot reload |
+| `npm run build` | Type-check + production build → `dist/` |
+| `npm run test` | Run Vitest test suite (19 tests) |
+| `npm run test:watch` | Run tests in watch mode |
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/resources` | List resources (search, status, category, sortBy, sortOrder, page, per_page) |
+| `POST` | `/api/resources` | Add a new resource |
+| `PATCH` | `/api/resources/:id` | Edit resource fields |
+| `POST` | `/api/resources/:id/checkout` | Check out — creates a Loan record |
+| `POST` | `/api/resources/:id/return` | Return — closes the active Loan |
+| `DELETE` | `/api/resources/:id` | Remove resource + all loan history |
+| `GET` | `/api/loans` | List loans (search, status, page, per_page) |
+| `GET` | `/api/stats` | Dashboard counts + category breakdown |
+| `GET` | `/api/activity` | 20 most recent loan events |
 
 ---
 
@@ -56,146 +125,43 @@ You can:
 
 ```
 Library_web_app/
-│
-├── app.py                  ← Main Flask app (routes + database model)
-├── requirements.txt        ← Python packages needed
-├── .gitignore              ← Files not to commit to Git
-├── README.md               ← This file
-│
-├── templates/
-│   ├── base.html           ← Shared layout (navbar, footer)
-│   ├── index.html          ← Home page — shows all books
-│   └── add_book.html       ← Form to add a new book
-│
-└── static/
-    └── style.css           ← All the styling
+├── backend/
+│   ├── app.py              # Flask app factory + overdue sync on startup
+│   ├── models.py           # Resource + Loan SQLAlchemy models
+│   ├── requirements.txt
+│   └── routes/
+│       ├── resources.py    # CRUD + checkout/return
+│       ├── loans.py        # Loan listing
+│       └── stats.py        # Dashboard stats + activity
+└── frontend/
+    ├── src/
+    │   ├── api/            # Centralized Axios client
+    │   ├── components/     # 12 reusable UI components
+    │   ├── stores/         # Pinia stores (resources, loans, ui)
+    │   ├── types/          # TypeScript interfaces
+    │   ├── views/          # DashboardView, ResourcesView, HistoryView
+    │   └── tests/          # Vitest specs (19 tests, 4 files)
+    ├── package.json
+    └── vite.config.ts
 ```
 
 ---
 
-## How to Run (Step-by-Step)
-
-### Step 1 — Make sure Python is installed
-
-Open your terminal and type:
-```bash
-python3 --version
-```
-You should see something like `Python 3.10.x`. If not, download Python from [python.org](https://www.python.org).
-
----
-
-### Step 2 — Go to the project folder
+## Running Tests
 
 ```bash
-cd path/to/Library_web_app
+cd frontend
+npm run test
 ```
 
----
+Expected output:
 
-### Step 3 — Create a virtual environment
-
-A virtual environment keeps your project packages separate from other projects.
-
-```bash
-python3 -m venv .venv
 ```
+✓ src/tests/StatusBadge.spec.ts      (4 tests)
+✓ src/tests/LoanStatusBadge.spec.ts  (7 tests)
+✓ src/tests/StatsCard.spec.ts        (4 tests)
+✓ src/tests/ConfirmDialog.spec.ts    (4 tests)
 
-This creates a folder called `.venv`.
-
----
-
-### Step 4 — Activate the virtual environment
-
-**On Mac/Linux:**
-```bash
-source .venv/bin/activate
+Test Files  4 passed (4)
+     Tests  19 passed (19)
 ```
-
-**On Windows:**
-```bash
-.venv\Scripts\activate
-```
-
-You will see `(.venv)` at the start of your terminal line.
-
----
-
-### Step 5 — Install the required packages
-
-```bash
-pip install -r requirements.txt
-```
-
-This installs Flask and Flask-SQLAlchemy.
-
----
-
-### Step 6 — Run the app
-
-```bash
-python app.py
-```
-
-You will see output like this:
-```
- * Running on http://127.0.0.1:5000
-```
-
----
-
-### Step 7 — Open the app in your browser
-
-Go to: **http://127.0.0.1:5000**
-
-The database (`library.db`) is created automatically the first time you run the app.
-
----
-
-### Step 8 — Try the features
-
-1. Click **+ Add Book** to add a few books
-2. Click **Borrow** next to any available book
-3. Click **Return** to return a borrowed book
-4. Use the search bar to search by title, author, or genre
-5. Use the dropdown to filter by Available or Borrowed
-6. Click **Remove** to delete an available book
-
----
-
-## Screenshots
-
-> Add screenshots here after running the app!
-
-| Home Page | Add Book Form |
-|-----------|---------------|
-| *(screenshot)* | *(screenshot)* |
-
----
-
-## Future Improvements
-
-- Add user login so each member has their own borrowing history
-- Add a due date and overdue warning system
-- Add pagination when the book list gets very long
-- Add the ability to edit book details after adding
-- Deploy the app online using Render or Railway
-
----
-
-## Database
-
-The app uses a single SQLite database file called `library.db` (created automatically).
-
-**Books table:**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Integer | Auto-generated unique ID |
-| title | Text | Book title (required) |
-| author | Text | Author name (required) |
-| genre | Text | Genre (default: General) |
-| status | Text | 'available' or 'borrowed' |
-| borrow_date | Text | Date the book was borrowed |
-| return_date | Text | Date the book was returned |
-| date_added | Text | Date the book was added |
